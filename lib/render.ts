@@ -7,6 +7,7 @@ import {
   isIterator,
   View,
   When,
+  EventListener
 } from "./view";
 
 export const render = (view: View, root: Element): Node | Node[] => {
@@ -34,7 +35,7 @@ export const render = (view: View, root: Element): Node | Node[] => {
   return renderElement(view, root);
 };
 
-const renderDynamicText = (view, root) => {
+const renderDynamicText = (view: () => string, root: Element) => {
   const node = document.createTextNode(view());
   effect(() => {
     const text = view();
@@ -91,7 +92,7 @@ const renderElement = (view: ElementConfig, root: Element) => {
     element.setAttribute(attribute, binding);
   }
   for (const event in view.events) {
-    element.addEventListener(event, view.events[event]);
+    element.addEventListener(event, view.events[event as keyof GlobalEventHandlersEventMap] as EventListener);
   }
   (element as any).view = view;
   root.append(element);

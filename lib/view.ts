@@ -9,7 +9,7 @@ export interface When {
   else?: View;
 }
 
-export interface For<T, I extends Iterable<T> = T[]> {
+export interface For<T> {
   collection: ReadableSignal<T>;
   items: (item: T, index: number) => ViewNode;
 }

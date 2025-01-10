@@ -33,7 +33,7 @@ export function signal<T>(value: T): WritableSignal<T> {
   return read as WritableSignal<T>;
 }
 
-function cleanup(running) {
+function cleanup(running: any) {
   for (const dep of running.dependencies) {
     dep.delete(running);
   }
@@ -53,7 +53,7 @@ export function effect(fn: Effect) {
 
   const running: any = {
     execute,
-    dependencies: new Set()
+    dependencies: new Set<any>()
   };
 
   execute();
