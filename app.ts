@@ -13,7 +13,7 @@ const Checkbox = (checked: () => string | false): View => {
   return {
     name: "input",
     attributes: {
-      type: "checkbox",
+      type: () => "checkbox",
       checked
     },
   };
@@ -34,12 +34,12 @@ const TodoApp = (): View => {
   return [
     {
       name: "h1",
-      children: "Todo App",
+      children: () => "Todo App",
     },
     {
       name: "input",
       attributes: {
-        type: "text",
+        type: () => "text",
       },
       ref(input: Element) {
         inputElement = input as HTMLInputElement;
@@ -55,7 +55,7 @@ const TodoApp = (): View => {
     },
     {
       name: "button",
-      children: "Add todo",
+      children: () => "Add todo",
       events: {
         click: addTodo,
       },
@@ -67,7 +67,7 @@ const TodoApp = (): View => {
         items(item: string) {
           return {
             name: "li",
-            children: item,
+            children: () => item,
             events: {
               click() {
                 todos.set(todos().filter((t) => t !== item));
@@ -96,7 +96,7 @@ const App = (): View => {
       {
         name: "div",
         attributes: {
-          id: "app",
+          id: () => "app",
           style: () =>
             `background: ${bgColor()}; width: 70px; height: 50px; color: white; text-align: center; line-height: 50px;`,
         },
@@ -106,7 +106,7 @@ const App = (): View => {
       {
         condition: () => state() % 2 === 0,
         then: Massive(),
-        else: "Odd",
+        else: () => "Odd",
       },
     ],
     events: {

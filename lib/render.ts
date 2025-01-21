@@ -24,11 +24,6 @@ export const render = (view: View, root: Element): Node | Node[] => {
     }
     return result;
   }
-  if (typeof view === "string") {
-    const node = document.createTextNode(view);
-    root.append(node);
-    return node;
-  }
   if (typeof view === "function") {
     return renderDynamicText(view, root);
   }
@@ -78,18 +73,14 @@ const renderElement = (view: ElementConfig, root: Element) => {
   const element = document.createElement(view.name);
   for (const attribute in view.attributes) {
     const binding = view.attributes[attribute];
-    if (isDynamicBinding(binding)) {
-      effect(() => {
-        const value = binding();
-        if (value === false) {
-          element.removeAttribute(attribute);
-          return;
-        }
-        element.setAttribute(attribute, value);
-      });
-      continue;
-    }
-    element.setAttribute(attribute, binding);
+    effect(() => {
+      const value = binding();
+      if (value === false) {
+        element.removeAttribute(attribute);
+        return;
+      }
+      element.setAttribute(attribute, value);
+    });
   }
   for (const event in view.events) {
     element.addEventListener(event, view.events[event as keyof GlobalEventHandlersEventMap] as EventListener);

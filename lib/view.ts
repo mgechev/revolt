@@ -1,6 +1,6 @@
 import { ReadableSignal } from "./signal";
 
-export type Binding = string | (() => string);
+export type Binding = (() => string);
 export type EventListener = <K extends keyof GlobalEventHandlersEventMap>(event: GlobalEventHandlersEventMap[K]) => void;
 
 export interface When {
@@ -16,7 +16,7 @@ export interface For<T> {
 
 export interface ElementConfig {
   name: keyof HTMLElementTagNameMap;
-  attributes?: Record<string, string|(() => false|string)>;
+  attributes?: Record<string, (() => false|string)>;
   children?: View;
   events?: {[key in keyof GlobalEventHandlersEventMap]?: EventListener};
   ref?: (node: Element) => void;
@@ -32,7 +32,7 @@ export const isElement = (node: any) => {
   return node.name !== undefined;
 };
 
-export const isDynamicBinding = (binding: string|(() => false|string)): binding is (() => false|string) => {
+export const isDynamicBinding = (binding: (() => false|string)): binding is (() => false|string) => {
   return typeof binding === 'function';
 };
 
