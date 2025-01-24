@@ -1,0 +1,35 @@
+:host {
+  display: flex;
+  flex-direction: column;
+}
+
+.messages {
+  height: 100%;
+}
+
+.prompt {
+  height: 80px;
+}
+
+.message {
+  padding: 10px;
+  border-radius: 5px;
+  display: block;
+  position: relative;
+  width: 80%;
+  margin: 15px;
+}
+
+.bot {
+  background-color: #eee;
+  text-align: left;
+  left: 0px;
+  float: left;
+}
+
+.user {
+  border: 1px solid #eee;
+  text-align: right;
+  right: 0px;
+  float: right;
+}

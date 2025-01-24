@@ -1,0 +1,13 @@
+<section class="messages">
+  @for (message of messages(); track message) {
+    @if (message.sender === 'bot') {
+      <div class="bot message">{{ message.text }}</div>
+    } @else {
+      <div class="user message">{{ message.text }}</div>
+    }
+  }
+</section>
+<mat-form-field class="prompt" (keyup.enter)="sendMessage()">
+  <mat-label>Prompt</mat-label>
+  <textarea [(ngModel)]="prompt" matInput placeholder="Build tetris"></textarea>
+</mat-form-field>
