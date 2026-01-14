@@ -1,4 +1,4 @@
-import { signal, render, View, For } from "./lib";
+import { signal, render, View } from "./lib/index";
 
 const Massive = (): View => {
   const arr = new Array(10000).fill('0');

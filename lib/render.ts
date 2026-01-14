@@ -1,51 +1,57 @@
 import { effect } from "./signal";
 import {
-  ElementConfig,
-  For,
-  isConditional,
-  isDynamicBinding,
-  isIterator,
   View,
-  When,
-  EventListener
+  ElementNode,
+  ConditionalNode,
+  IteratorNode,
+  ViewHTMLElement,
+  isElement,
+  isConditional,
+  isIterator
 } from "./view";
 
-export const render = (view: View, root: Element): Node | Node[] => {
+/** --- Rendering Engine --- **/
+
+export const render = (view: View, root: Node): Node | Node[] => {
   if (isConditional(view)) {
     return renderCondition(view, root);
   }
   if (isIterator(view)) {
     return renderIterator(view, root);
   }
-  if (view instanceof Array) {
+  if (Array.isArray(view)) {
     const result: Node[] = [];
     for (const child of view) {
-      result.push(render(child, root) as Node);
+      const rendered = render(child, root);
+      if (Array.isArray(rendered)) result.push(...rendered);
+      else result.push(rendered);
     }
     return result;
   }
-  if (typeof view === "string") {
-    const node = document.createTextNode(view);
-    root.append(node);
-    return node;
-  }
   if (typeof view === "function") {
-    return renderDynamicText(view, root);
+    return renderDynamicText(view as () => string, root);
   }
-  return renderElement(view, root);
+  if (isElement(view)) {
+    return renderElement(view, root);
+  }
+
+  // Handle primitive strings/numbers
+  const node = document.createTextNode(String(view ?? ""));
+  root.appendChild(node);
+  return node;
 };
 
-const renderDynamicText = (view: () => string, root: Element) => {
+const renderDynamicText = (view: () => string, root: Node): Text => {
   const node = document.createTextNode(view());
   effect(() => {
     const text = view();
     node.textContent = text;
   });
-  root.append(node);
+  root.appendChild(node);
   return node;
 };
 
-const renderCondition = (view: When, root: Element) => {
+const renderCondition = (view: ConditionalNode, root: Node): Node | Node[] => {
   let dom: Node | Node[] | undefined;
   effect(() => {
     const result = view.condition();
@@ -61,11 +67,10 @@ const renderCondition = (view: When, root: Element) => {
   return dom ?? [];
 };
 
-const renderIterator = (view: For<any>, root: Element) => {
-  let collection = view.collection();
+const renderIterator = (view: IteratorNode, root: Node): Node | Node[] => {
   let result: Node | Node[] | undefined;
   effect(() => {
-    collection = view.collection();
+    const collection = view.collection();
     if (result) {
       destroy(result);
     }
@@ -74,48 +79,74 @@ const renderIterator = (view: For<any>, root: Element) => {
   return result ?? [];
 };
 
-const renderElement = (view: ElementConfig, root: Element) => {
-  const element = document.createElement(view.name);
-  for (const attribute in view.attributes) {
-    const binding = view.attributes[attribute];
-    if (isDynamicBinding(binding)) {
-      effect(() => {
-        const value = binding();
-        if (value === false) {
+const renderElement = (view: ElementNode, root: Node): HTMLElement => {
+  const element = document.createElement(view.name) as ViewHTMLElement;
+
+  if (view.attributes) {
+    for (const attribute in view.attributes) {
+      const binding = view.attributes[attribute];
+      if (typeof binding === 'function') {
+        effect(() => {
+          const value = binding();
+          if (value === false) {
+            element.removeAttribute(attribute);
+            return;
+          }
+          element.setAttribute(attribute, value);
+        });
+      } else {
+        if (binding === false) {
           element.removeAttribute(attribute);
-          return;
+        } else {
+          element.setAttribute(attribute, String(binding));
         }
-        element.setAttribute(attribute, value);
-      });
-      continue;
+      }
     }
-    element.setAttribute(attribute, binding);
   }
-  for (const event in view.events) {
-    element.addEventListener(event, view.events[event as keyof GlobalEventHandlersEventMap] as EventListener);
+
+  if (view.events) {
+    for (const event in view.events) {
+      element.addEventListener(event, view.events[event]);
+    }
   }
-  (element as any).view = view;
-  root.append(element);
+
+  element.view = view;
+  root.appendChild(element);
+
   if (view.children) {
-    render(view.children, element);
+    let children = view.children;
+    if (typeof children === 'function') {
+      const evaluated = children();
+      if (Array.isArray(evaluated)) {
+        render(evaluated, element);
+      } else {
+        render(evaluated, element);
+      }
+    } else {
+      render(children, element);
+    }
   }
+
   if (view.ref) {
     view.ref(element);
   }
+
   return element;
 };
 
-const destroy = (node: Node | Node[]) => {
-  if (node instanceof Array) {
+const destroy = (node: Node | Node[]): void => {
+  if (Array.isArray(node)) {
     for (const child of node) {
       destroy(child);
     }
   } else {
     node.parentElement?.removeChild(node);
-    const view = (node as any)?.view;
-    if (!view) {
+
+    const view = (node as ViewHTMLElement)?.view;
+    if (!view || !view.events) {
       return;
     }
+
     for (const event in view.events) {
       node.removeEventListener(event, view.events[event]);
     }

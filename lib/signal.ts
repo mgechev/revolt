@@ -1,19 +1,21 @@
-// Ryan's implementation from https://dev.to/ryansolid/building-a-reactive-library-from-scratch-1i0p
+/** --- Reactivity Types --- **/
 
-const context: any = [];
-
-export type ReadableSignal<T> = () => T;
-
-export interface WritableSignal<T> extends ReadableSignal<T> {
-  set(value: T): void;
+export interface RunningEffect {
+  execute: () => void;
+  dependencies: Set<Set<RunningEffect>>;
 }
 
-export type Effect = () => void;
+export interface Signal<T> {
+  (): T;
+  set: (nextValue: T) => void;
+}
 
-export function signal<T>(value: T): WritableSignal<T> {
-  const subscriptions = new Set<any>();
+const context: RunningEffect[] = [];
 
-  const read = (): T => {
+export function signal<T>(value: T): Signal<T> {
+  const subscriptions = new Set<RunningEffect>();
+
+  const read: any = () => {
     const running = context[context.length - 1];
     if (running) {
       subscriptions.add(running);
@@ -29,18 +31,18 @@ export function signal<T>(value: T): WritableSignal<T> {
     }
   };
 
-  (read as any).set = set;
-  return read as WritableSignal<T>;
+  read.set = set;
+  return read as Signal<T>;
 }
 
-function cleanup(running: any) {
+function cleanup(running: RunningEffect) {
   for (const dep of running.dependencies) {
     dep.delete(running);
   }
   running.dependencies.clear();
 }
 
-export function effect(fn: Effect) {
+export function effect(fn: () => void) {
   const execute = () => {
     cleanup(running);
     context.push(running);
@@ -51,9 +53,9 @@ export function effect(fn: Effect) {
     }
   };
 
-  const running: any = {
+  const running: RunningEffect = {
     execute,
-    dependencies: new Set<any>()
+    dependencies: new Set()
   };
 
   execute();

@@ -1,45 +1,50 @@
-import { ReadableSignal } from "./signal";
+/** --- View & DOM Types --- **/
 
-export type Binding = string | (() => string);
-export type EventListener = <K extends keyof GlobalEventHandlersEventMap>(event: GlobalEventHandlersEventMap[K]) => void;
+export type View =
+  | ElementNode
+  | ConditionalNode
+  | IteratorNode
+  | View[]
+  | (() => any)
+  | string
+  | number
+  | null
+  | undefined;
 
-export interface When {
-  condition: ReadableSignal<boolean>;
+export interface ElementNode {
+  name: string;
+  attributes?: Record<string, string | number | boolean | (() => any)>;
+  events?: Record<string, EventListener>;
+  children?: View | (() => View[]);
+  ref?: (el: HTMLElement) => void;
+}
+
+export interface ConditionalNode {
+  condition: () => any;
   then: View;
   else?: View;
 }
 
-export interface For<T> {
-  collection: ReadableSignal<T>;
-  items: (item: T, index: number) => ViewNode;
+export interface IteratorNode {
+  collection: () => any[];
+  items: (item: any, index: number) => View;
 }
 
-export interface ElementConfig {
-  name: keyof HTMLElementTagNameMap;
-  attributes?: Record<string, string|(() => false|string)>;
-  children?: View;
-  events?: {[key in keyof GlobalEventHandlersEventMap]?: EventListener};
-  ref?: (node: Element) => void;
+// Extension to handle the custom .view property assigned in renderElement
+export interface ViewHTMLElement extends HTMLElement {
+  view?: ElementNode;
 }
 
-export type ViewNode = Binding | ElementConfig | When | For<any>;
+/** --- Type Guards --- **/
 
-export type View = ViewNode | ViewNode[] | View[];
-
-export type Component = (() => View);
-
-export const isElement = (node: any) => {
-  return node.name !== undefined;
+export const isElement = (node: any): node is ElementNode => {
+  return node && (node as ElementNode).name !== undefined;
 };
 
-export const isDynamicBinding = (binding: string|(() => false|string)): binding is (() => false|string) => {
-  return typeof binding === 'function';
+export const isConditional = (node: any): node is ConditionalNode => {
+  return node && (node as ConditionalNode).condition !== undefined;
 };
 
-export const isConditional = <T>(node: any): node is When => {
-  return node.condition !== undefined;
-};
-
-export const isIterator = <T>(node: any): node is For<T> => {
-  return node.collection !== undefined;
+export const isIterator = (node: any): node is IteratorNode => {
+  return node && (node as IteratorNode).collection !== undefined;
 };
